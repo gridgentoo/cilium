@@ -24,7 +24,9 @@ Metrics:
 Options:
  sourceContext          := identifier , { "|", identifier }
  destinationContext     := identifier , { "|", identifier }
+ labels                 := label , { ",", label }
  identifier             := identity | namespace | pod | pod-short | dns | ip | reserved-identity
+ label                  := source_pod | source_namespace | destination_pod | destination_namespace
 `
 	assert.Equal(t, expected, plugin.HelpText())
 }
