@@ -43,11 +43,11 @@ const (
 
 // ContextOptionsHelp is the help text for context options
 const ContextOptionsHelp = `
- sourceContext          := identifier , { "|", identifier }
- destinationContext     := identifier , { "|", identifier }
- labels                 := label , { ",", label }
- identifier             := identity | namespace | pod | pod-short | dns | ip | reserved-identity
- label                  := source_pod | source_namespace | source_workload | destination_pod | destination_namespace | destination_workload | reporter
+ sourceContext          ::= identifier , { "|", identifier }
+ destinationContext     ::= identifier , { "|", identifier }
+ labels                 ::= label , { ",", label }
+ identifier             ::= identity | namespace | pod | pod-short | dns | ip | reserved-identity
+ label                  ::= source_pod | source_namespace | source_workload | destination_pod | destination_namespace | destination_workload | reporter
 `
 
 var (
