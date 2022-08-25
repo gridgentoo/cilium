@@ -12,7 +12,8 @@ import (
 	"k8s.io/utils/strings/slices"
 
 	pb "github.com/cilium/cilium/api/v1/flow"
-	"github.com/cilium/cilium/pkg/labels"
+	k8sConst "github.com/cilium/cilium/pkg/k8s/apis/cilium.io"
+	ciliumLabels "github.com/cilium/cilium/pkg/labels"
 )
 
 // ContextIdentifier describes the identification method of a transmission or
@@ -47,24 +48,36 @@ const ContextOptionsHelp = `
  destinationContext     ::= identifier , { "|", identifier }
  labels                 ::= label , { ",", label }
  identifier             ::= identity | namespace | pod | pod-short | dns | ip | reserved-identity
- label                  ::= source_pod | source_namespace | source_workload | destination_pod | destination_namespace | destination_workload | reporter
+ label                  ::= source_pod | source_namespace | source_workload | source_app | destination_pod | destination_namespace | destination_workload | destination_app | reporter
 `
 
 var (
 	shortPodPattern    = regexp.MustCompile("^(.+?)(-[a-z0-9]+){1,2}$")
-	kubeAPIServerLabel = labels.LabelKubeAPIServer.String()
+	kubeAPIServerLabel = ciliumLabels.LabelKubeAPIServer.String()
 	// contextLabelsList defines available labels for the ContextLabels
 	// ContextIdentifier and the order of those labels for GetLabelNames and GetLabelValues.
 	contextLabelsList = []string{
 		"source_pod",
 		"source_namespace",
 		"source_workload",
+		"source_app",
 		"destination_pod",
 		"destination_namespace",
 		"destination_workload",
+		"destination_app",
 		"reporter",
 	}
 	allowedContextLabels = newLabelsSet(contextLabelsList)
+
+	podAppLabels = []string{
+		// k8s recommend app label
+		ciliumLabels.LabelSourceK8sKeyPrefix + k8sConst.AppKubernetes + "/name",
+		// legacy k8s app label
+		ciliumLabels.LabelSourceK8sKeyPrefix + "k8s-app",
+		// app label that is often used before people realize there's a recommended
+		// label
+		ciliumLabels.LabelSourceK8sKeyPrefix + "app",
+	}
 )
 
 // String return the context identifier as string
@@ -221,6 +234,10 @@ func labelsContext(wantedLabels labelsSet, flow *pb.Flow) (outputLabels []string
 						labelValue = workloads[0].Name
 					}
 				}
+			case "source_app":
+				if flow.GetSource() != nil {
+					labelValue = getK8sAppFromLabels(flow.GetSource().GetLabels())
+				}
 			case "destination_pod":
 				if flow.GetDestination() != nil {
 					labelValue = flow.GetDestination().PodName
@@ -234,6 +251,10 @@ func labelsContext(wantedLabels labelsSet, flow *pb.Flow) (outputLabels []string
 					if workloads := flow.GetDestination().GetWorkloads(); len(workloads) != 0 {
 						labelValue = workloads[0].Name
 					}
+				}
+			case "destination_app":
+				if flow.GetDestination() != nil {
+					labelValue = getK8sAppFromLabels(flow.GetDestination().GetLabels())
 				}
 			case "reporter":
 				switch flow.GetTrafficDirection() {
@@ -328,7 +349,7 @@ func handleReservedIdentityLabels(lbls []string) string {
 	}
 	// else return the first reserved label.
 	for _, label := range lbls {
-		if strings.HasPrefix(label, labels.LabelSourceReserved+":") {
+		if strings.HasPrefix(label, ciliumLabels.LabelSourceReserved+":") {
 			return label
 		}
 	}
@@ -381,6 +402,18 @@ func destinationIPContext(flow *pb.Flow) (context string) {
 		context = flow.GetIP().GetDestination()
 	}
 	return
+}
+
+func getK8sAppFromLabels(labels []string) string {
+	ls := ciliumLabels.ParseLabelArrayFromArray(labels)
+	// iterate over the set of pod app labels we source from and return the first
+	// app label that is non-empty.
+	for _, label := range podAppLabels {
+		if labelValue := ls.Get(label); labelValue != "" {
+			return labelValue
+		}
+	}
+	return ""
 }
 
 // GetLabelValues returns the values of the context relevant labels according
