@@ -47,7 +47,7 @@ const ContextOptionsHelp = `
  destinationContext     := identifier , { "|", identifier }
  labels                 := label , { ",", label }
  identifier             := identity | namespace | pod | pod-short | dns | ip | reserved-identity
- label                  := source_pod | source_namespace | destination_pod | destination_namespace
+ label                  := source_pod | source_namespace | source_workload | destination_pod | destination_namespace | destination_workload
 `
 
 var (
@@ -58,8 +58,10 @@ var (
 	contextLabelsList = []string{
 		"source_pod",
 		"source_namespace",
+		"source_workload",
 		"destination_pod",
 		"destination_namespace",
+		"destination_workload",
 	}
 	allowedContextLabels = newLabelsSet(contextLabelsList)
 )
@@ -212,6 +214,12 @@ func labelsContext(wantedLabels labelsSet, flow *pb.Flow) (outputLabels []string
 				if flow.GetSource() != nil {
 					labelValue = flow.GetSource().Namespace
 				}
+			case "source_workload":
+				if flow.GetSource() != nil {
+					if workloads := flow.GetSource().GetWorkloads(); len(workloads) != 0 {
+						labelValue = workloads[0].Name
+					}
+				}
 			case "destination_pod":
 				if flow.GetDestination() != nil {
 					labelValue = flow.GetDestination().PodName
@@ -219,6 +227,12 @@ func labelsContext(wantedLabels labelsSet, flow *pb.Flow) (outputLabels []string
 			case "destination_namespace":
 				if flow.GetDestination() != nil {
 					labelValue = flow.GetDestination().Namespace
+				}
+			case "destination_workload":
+				if flow.GetDestination() != nil {
+					if workloads := flow.GetDestination().GetWorkloads(); len(workloads) != 0 {
+						labelValue = workloads[0].Name
+					}
 				}
 			default:
 				// Label is in contextLabelsList but isn't handled the switch

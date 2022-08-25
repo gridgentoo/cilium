@@ -539,8 +539,10 @@ Option Value              Description
 ========================= ===============================================================================
 ``source_namespace``      The namespace of the pod if the flow source is from a Kubernetes pod.
 ``source_pod``            The pod name of the pod if the flow source is from a Kubernetes pod.
+``source_workload``       The name of the source pod's workload (Deployment, Statefulset, Daemonset, ReplicationController).
 ``destination_namespace`` The namespace of the pod if the flow destination is from a Kubernetes pod.
 ``destination_pod``       The pod name of the pod if the flow destination is from a Kubernetes pod.
+``destination_workload``  The name of the destination pod's workload (Deployment, Statefulset, Daemonset, ReplicationController).
 ========================= ===============================================================================
 
 When specifying the flow context, multiple values can be specified by separating them via the ``,`` symbol.
