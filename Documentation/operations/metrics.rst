@@ -543,6 +543,7 @@ Option Value              Description
 ``destination_namespace`` The namespace of the pod if the flow destination is from a Kubernetes pod.
 ``destination_pod``       The pod name of the pod if the flow destination is from a Kubernetes pod.
 ``destination_workload``  The name of the destination pod's workload (Deployment, Statefulset, Daemonset, ReplicationController).
+``reporter``              Identifies the origin of the flow/request. It is set to ``source`` if it originated from the client, and ``destination`` if it originated from the server.
 ========================= ===============================================================================
 
 When specifying the flow context, multiple values can be specified by separating them via the ``,`` symbol.

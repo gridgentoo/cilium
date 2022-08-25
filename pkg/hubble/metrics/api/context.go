@@ -47,7 +47,7 @@ const ContextOptionsHelp = `
  destinationContext     := identifier , { "|", identifier }
  labels                 := label , { ",", label }
  identifier             := identity | namespace | pod | pod-short | dns | ip | reserved-identity
- label                  := source_pod | source_namespace | source_workload | destination_pod | destination_namespace | destination_workload
+ label                  := source_pod | source_namespace | source_workload | destination_pod | destination_namespace | destination_workload | reporter
 `
 
 var (
@@ -62,6 +62,7 @@ var (
 		"destination_pod",
 		"destination_namespace",
 		"destination_workload",
+		"reporter",
 	}
 	allowedContextLabels = newLabelsSet(contextLabelsList)
 )
@@ -233,6 +234,15 @@ func labelsContext(wantedLabels labelsSet, flow *pb.Flow) (outputLabels []string
 					if workloads := flow.GetDestination().GetWorkloads(); len(workloads) != 0 {
 						labelValue = workloads[0].Name
 					}
+				}
+			case "reporter":
+				switch flow.GetTrafficDirection() {
+				case pb.TrafficDirection_EGRESS:
+					labelValue = "client"
+				case pb.TrafficDirection_INGRESS:
+					labelValue = "server"
+				default:
+					labelValue = "unknown"
 				}
 			default:
 				// Label is in contextLabelsList but isn't handled the switch
