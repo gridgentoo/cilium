@@ -6,7 +6,9 @@ package k8s
 import (
 	"fmt"
 	"net"
+	"net/netip"
 
+	"github.com/cilium/cilium/pkg/ip"
 	"github.com/cilium/cilium/pkg/ipcache"
 	"github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/labels"
 	"github.com/cilium/cilium/pkg/policy"
@@ -112,7 +114,7 @@ func (k RuleTranslator) generateToCidrFromEndpoint(
 	// known at that time, so the IPCache hasn't been informed about them.
 	// In this case, it's the job of this Translator to notify the IPCache.
 	if allocatePrefixes {
-		prefixes, err := endpoint.CIDRPrefixes()
+		cidrs, err := endpoint.CIDRPrefixes()
 		if err != nil {
 			return err
 		}
@@ -121,6 +123,10 @@ func (k RuleTranslator) generateToCidrFromEndpoint(
 		// policy would be first pushed to the endpoint policies and then to the ipcache to
 		// avoid traffic mapping to an ID that the endpoint policy maps do not know about
 		// yet.
+		prefixes := make([]netip.Prefix, 0, len(cidrs))
+		for _, c := range cidrs {
+			prefixes = append(prefixes, ip.IPNetToPrefix(c))
+		}
 		if _, err := k.ipcache.AllocateCIDRs(prefixes, nil, nil); err != nil {
 			return err
 		}
